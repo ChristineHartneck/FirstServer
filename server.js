@@ -50,7 +50,7 @@ app.post( "/api/postStudent", jsonParser, ( req, res, next ) => {
 		firstName,
 		lastName,
 		id
-	}
+	};
 
 	StudentList.post(newStudent)
 		.then( student => {
@@ -65,7 +65,7 @@ app.post( "/api/postStudent", jsonParser, ( req, res, next ) => {
 			return res.status( 500 ).json({
 				status : 500,
 				message : "Something went wrong with the DB. Try again later."
-			})
+			});
 		});
 	/*
 	if ( ! name || ! id ){
@@ -114,23 +114,87 @@ app.get( "/api/getStudentById", ( req, res, next ) =>{
 		});
 	}
 
-	for( let i = 0; i < students.length; i ++ ){
-		if ( id == students[i].id ){
-			return res.status( 202 ).json({
-				message : "Student found in the list",
-				status : 202,
-				student : students[i]
-			});
-		}
+	StudentList.getByID(id)
+		.then(student => {
+			if ( student ){
+				return res.status( 202 ).json({
+					message : "Student found in the list",
+					status : 202,
+					student : student
+				});
+			}
+			else{
+				res.statusMessage = "Student not found in the list.";
+
+				return res.status( 404 ).json({
+					message : "Student not found in the list.",
+					status : 404
+				});
+			}
+		})
+		.catch( err => {
+			res.statusMessage = "Something went wrong with the DB. Try again later.";
+			return res.status( 500 ).json({
+				status : 500,
+				message : "Something went wrong with the DB. Try again later."
+			})
+		})
+});
+
+app.put( "/api/updateStudent", jsonParser, ( req, res, next ) => {
+	let firstName = req.body.firstName;
+	let lastName = req.body.lastName;
+	let id = req.body.id;
+
+	if ( !id ){
+		res.statusMessage = "Missing 'id' field in body!";
+		return res.status( 406 ).json({
+			message : "Missing 'id' field in body!",
+			status : 406
+		});
 	}
 
-	res.statusMessage = "Student not found in the list.";
+	if( !firstName && !lastName ){
+		res.statusMessage = "You must at least send either firstName or lastName to update!";
+		return res.status( 406 ).json({
+			message : "You must at least send either firstName or lastName to update!",
+			status : 406
+		});
+	}
 
-	return res.status( 404 ).json({
-		message : "Student not found in the list.",
-		status : 404
-	});
+	let updatedStudent = { id : id };
 
+	if ( firstName ){
+		updatedStudent.firstName = firstName;
+	}
+
+	if ( lastName ){
+		updatedStudent.lastName = lastName;
+	}
+
+	StudentList.put(updatedStudent)
+		.then( student => {
+			res.status(200).json({
+				message : "Successfully updated the student",
+				status : 200,
+				student : student
+			});
+		})
+		.catch( err => {
+			if( err.message == 404 ) {
+				return res.status(404).json({
+					message: "Student not found in the list",
+					status: 404
+				});
+			}
+			else{
+				res.statusMessage = "Something went wrong with the DB. Try again later.";
+				return res.status( 500 ).json({
+					status : 500,
+					message : "Something went wrong with the DB. Try again later."
+				})
+			}
+		});
 });
 
 
@@ -175,7 +239,7 @@ function closeServer(){
 		});
 }
 
-runServer( 8181, "mongodb://localhost/studentsDB" )
+runServer( 8080, "mongodb://localhost/studentsDB" )
 	.catch( err => {
 		console.log( err );
 	});
