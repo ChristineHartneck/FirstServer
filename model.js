@@ -1,4 +1,5 @@
 let mongoose = require('mongoose');
+let bcrypt = require('bcryptjs');
 
 mongoose.Promise = global.Promise;
 
@@ -10,8 +11,61 @@ let studentSchema = mongoose.Schema({
 			required : true }
 });
 
-let Student = mongoose.model( 'Student', studentSchema );
+let userSchema = mongoose.Schema({
+	username : { type : String, 
+				 required : true, 
+				 unique : true },
+	password : { type : String,
+				 required : true }
+});
 
+let Student = mongoose.model( 'Student', studentSchema );
+let User = mongoose.model( 'User', userSchema );
+
+let UserList = {
+	register : function( user ){
+		return User.find( {username : user.username} )
+			.then( checkUser => {
+				if ( checkUser.length == 0 ){
+					return bcrypt.hash(user.password, 10)
+				}
+			})
+			.then( hashPassword =>{
+				return User.create({
+					username : user.username, 
+					password : hashPassword
+				})
+				.then( newUser => {
+					return newUser;
+				})
+				.catch( error => {
+					throw Error( error );
+				});
+			})
+			.catch( error => {
+				throw Error( error );
+			});
+	},
+	login : function( user ){
+		return User.findOne( {username : user.username} )
+			.then( checkUser => {
+				if ( checkUser ){
+					return bcrypt.compare(user.password, checkUser.password)
+				}
+			})
+			.then( validUser => {
+				if( validUser ){
+					return "Valid User";
+				}
+				else{
+					throw Error("Invalid User");
+				}
+			})
+			.catch( error => {
+				throw Error( error );
+			});
+	}
+};
 
 let StudentList = {
 	get : function(){
@@ -64,6 +118,6 @@ let StudentList = {
 	}
 };
 
-module.exports = { StudentList };
+module.exports = { StudentList, UserList };
 
 

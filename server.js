@@ -1,10 +1,9 @@
-
 let express = require( "express" );
 let morgan = require( "morgan" );
 let mongoose = require( "mongoose" );
 let bodyParser = require( "body-parser" );
-let { StudentList } = require('./model');
-const { DATABASE_URL, PORT } = require( './config' );
+let { PetList, UserList } = require('./model');
+let { DATABASE_URL, PORT } = require('./config');
 
 let app = express();
 let jsonParser = bodyParser.json();
@@ -14,19 +13,43 @@ app.use( express.static( "public" ) );
 
 app.use( morgan( "dev" ) );
 
-let students = [{
-		name : "Mario",
-		id : 52436
-	},
-	{
-		name : "Maria",
-		id : 83746	
-	},
-	{
-		name : "Pedro",
-		id : 12345	
-	}
-	];
+app.post( "/api/users/register", jsonParser, (req, res, next) => {
+	let {username, password} = req.body;
+
+	// Validations missing
+
+	let user = {username, password};
+	UserList.register(user)
+		.then(newUser => {
+			return res.status( 201 ).json( newUser );
+		})
+		.catch( error => {
+			res.statusMessage = "Something went wrong with the DB. Try again later.";
+			return res.status( 500 ).json({
+				status : 500,
+				message : "Something went wrong with the DB. Try again later."
+			})
+		});
+});
+
+app.post( "/api/users/login", jsonParser, (req, res, next) => {
+	let {username, password} = req.body;
+
+	// Validations missing
+
+	let user = {username, password};
+	UserList.login(user)
+		.then(goodUser => {
+			return res.status( 202 ).json( goodUser );
+		})
+		.catch( error => {
+			res.statusMessage = "Something went wrong with the DB. Try again later.";
+			return res.status( 500 ).json({
+				status : 500,
+				message : "Something went wrong with the DB. Try again later."
+			})
+		});
+});
 
 app.get( "/api/students", ( req, res, next ) => {
 	StudentList.get()
